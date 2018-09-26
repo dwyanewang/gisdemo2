@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
 
-public class HSbByq {
+public class transformer {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String ewmbh;

@@ -1,0 +1,155 @@
+<!--
+ 	- @Author: Dwyanewang  
+ 	- @Date:   2018-09-12 15:11:28  
+ 	- @Last Modified by:   Dwyanewang  
+ 	- @Last Modified time: 2018-09-14 10:57:27  
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>GIS新开发</title>
+    <!-- 引入jQuery -->
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-migrate-1.4.1.js"></script>
+    <!-- 引入ol插件 -->
+    <link rel="stylesheet" type="text/css" href="css/ol.css">
+    <script src="js/ol-debug.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/baseMap.css">
+    <link rel="stylesheet" href="css/selectpage.css">
+</head>
+
+<body>
+<div id="contextmenu_container" class="contextmenu">
+    <ul>
+        <li id="interconnection-switch">显示联络线路</li>
+        <li>添加地标</li>
+        <li>距离丈量</li>
+    </ul>
+</div>
+<div id="hover-tips"></div>
+<div id="testRow">
+    <input type="text" id="selectPage" class="" placeholder="请输入查询关键字">
+    <button type="button" class="select-page-button" id="func1"><img src="images/search.png"></button>
+</div>
+<!--<div id="hover-tips">-->
+<!--<span>通过border</span>-->
+<!--<div class="tips tips-border"></div>-->
+<!--<div class="tips tips-background"></div>-->
+<!--</div>-->
+
+<div id="mapCon"></div>
+<script src="js/mapTools.js"></script>
+<script src="js/baseMap.js"></script>
+<script src="js/drawLayer.js"></script>
+<script src="js/searchAndSelect.js"></script>
+<script src="js/selectpage.js"></script>
+<script type="text/javascript">
+    (function () {
+        var map = baseMap.map();
+        // var source = new ol.source.Vector();
+        // source.addFeatures(drawLayer.drawLine({
+        //     type: "10kv",
+        //     name: "asdfasassdfdgsdgsdgsdgdsfgdsg"
+        // }));
+        // source.addFeatures(drawLayer.drawLine({
+        //     type: "10kv",
+        //     name: "asdfasassdfdgsdgsdgsdgdsfgdsg",
+        //     coordinates: [[114.0648070, 30.3719346], [114.08316525024352, 30.340522574569007]]
+        // }));
+        // source.addFeatures(drawLayer.drawLine({
+        //     type: "10kv",
+        //     name: "asdfasassdfdgsdgsdgsdgdsfgdsg",
+        //     coordinates: [[114.08316525024352, 30.340522574569007], [114.07097648, 30.30310103]]
+        // }));
+
+        // var vectorLayer = new ol.layer.Vector({
+        //     name: "金城二回",
+        //     source: source,
+        //     zIndex: 1
+        // });
+        // map.addLayer(vectorLayer);
+
+        // var lineSource = new ol.source.Vector();
+        // lineSource.addFeatures(drawLayer.drawLine({
+        //     type: "10kv",
+        //     name: "fhfhfjfgjsgs",
+        //     coordinates: [[114.07097648, 30.30310103], [114.05605414, 30.29023863], [114.03322318, 30.28646208]]
+        // }));
+        // var lineLayer = new ol.layer.Vector({
+        //     name: "幸福二回",
+        //     source: lineSource,
+        //     zIndex: 1
+        // });
+        // map.addLayer(lineLayer);
+        $.ajax({
+            type: "get",
+            url: "/api/position/transformer",
+            // async: false,
+            dataType: "json",
+            success: function (transformerPosition) {
+                var pointSource = new ol.source.Vector();
+                pointSource.addFeatures(drawLayer.drawPoint({
+                    arr: transformerPosition
+                }).A);
+                var pointLayer = new ol.layer.Vector({
+                    source: pointSource,
+                    zIndex: 2
+                });
+                map.addLayer(pointLayer);
+            }
+
+        });
+        // var pointSource = new ol.source.Vector();
+        // pointSource.addFeatures(drawLayer.drawPoint({
+        //     arr: [{
+        //         "pos_x": "114.08316525024352",
+        //         "pos_y": "30.340522574569007",
+        //         "number": 1,
+        //         "name": "test1",
+        //         "status": 1,
+        //         "type": "变压器",
+        //         "attr1": "公变"
+        //     }, {
+        //         "pos_x": "114.06768691",
+        //         "pos_y": "30.31946033",
+        //         "number": 1,
+        //         "name": "汉南公变001",
+        //         "status": 0,
+        //         "type": "变压器",
+        //         "attr1": "公变"
+        //     }]
+        // }).A);
+        // pointSource.addFeatures(drawLayer.drawPoint({
+        //     arr: [{
+        //         "pos_x": "114.07097648",
+        //         "pos_y": "30.30310103",
+        //         "number": 2,
+        //         "name": "联028开关",
+        //         "status": 0,
+        //         "type": "开关",
+        //         "attr1": "联络开关"
+        //     }]
+        // }).A);
+        // var pointLayer = new ol.layer.Vector({
+        //     source: pointSource,
+        //     zIndex: 2
+        // });
+        // map.addLayer(pointLayer);
+
+        setTimeout(function () {
+            $("#testRow").fadeIn("slow").css("display", "block");
+            searchAndSelect.search(mapTools.getAllFeatureNames(map), map);
+            console.log(mapTools.getAllFeaturesProps(map, {featureType: ["name", "attr2"]}));
+        }, 1000);
+        // searchAndSelect.dragBox(map, lineSource);
+        searchAndSelect.selectPointerMove(map);
+        searchAndSelect.leftClick(map);
+        searchAndSelect.rightClick(map);
+    })();
+</script>
+
+</body>
+
+</html>

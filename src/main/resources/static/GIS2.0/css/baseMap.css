@@ -1,0 +1,105 @@
+/*
+* @Author: Dwyanewang
+* @Date:   2018-09-12 15:39:57
+* @Last Modified by:   Dwyanewang
+* @Last Modified time: 2018-09-13 17:07:15
+*/
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#mapCon {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+/***地图基本控件start***/
+.ol-control {
+    background-color: rgba(138, 121, 121, 0.3);
+}
+
+.ol-full-screen {
+    top: 4em;
+    left: .5em;
+    right: auto;
+}
+
+.ol-zoom-extent {
+    top: 5.9em;
+    left: .5em;
+}
+
+.ol-overviewmap {
+    left: .5em;
+    bottom: 2em;
+}
+
+/***地图基本控件end***/
+
+/***地图查询控件start***/
+.ol-dragbox {
+    background-color: rgba(255, 255, 255, 0.4);
+    border-color: rgba(100, 150, 0, 1);
+}
+
+/***地图查询控件end***/
+
+/***鼠标右键事件start***/
+.contextmenu {
+    position: absolute;
+    padding: 12px 0;
+    z-index: 9;
+    background-color: white;
+    width: 120px;
+    border-radius: 4px;
+    /*display: none;*/
+}
+
+.contextmenu ul {
+    padding: 6px 2px 0 2px;
+    list-style: none;
+}
+
+.contextmenu > ul > li {
+    text-align: center;
+    padding: 5px 0;
+}
+
+.contextmenu > ul > li:hover {
+    background-color: rgba(255, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+/***鼠标右键事件end***/
+
+/***鼠标移动时tips提示框start***/
+#hover-tips {
+    position: absolute;
+    height: 30px;
+    width: 150px;
+    /*left: 30px;*/
+    /*top: 60px;*/
+    top: -50px;
+    left: -38px;
+    background-color: #6b85a9;
+    color: #fff;
+    line-height: 30px;
+    padding: 0 7px;
+    border-radius: 6px;
+    box-shadow: 0 0 15px #6d3fe8;
+    border: 1px solid #fff;
+}
+
+#hover-tips::after {
+    content: "\25BC";
+    position: absolute;
+    color: #6b85a9;
+    left: 30px;
+    top: 20px;
+    height: 21px;
+}
+
+/***鼠标移动时tips提示框end***/

@@ -8,28 +8,64 @@ import java.math.BigDecimal;
  * 器件实体类
  */
 public class Point2Point {
+    /**
+     * 电源点二维码编号
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String distnPos;
+    /**
+     * 电源点经度坐标
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private BigDecimal distn_x;
+    /**
+     * 电源点纬度坐标
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private BigDecimal distn_y;
+    /**
+     * 器件经度坐标
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private BigDecimal pos_x;
+    /**
+     * 器件纬度坐标
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private BigDecimal pos_y;
+    /**
+     * 器件二维码编号
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String number;
+    /**
+     * 器件名称
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String name;
+    /**
+     * 器件状态
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Integer status;
+    /**
+     * 器件类型，有变电站、开关、变压器、故障指示器、配电房、环网箱、开闭所、杆塔
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String type;
+    /**
+     * 器件属性一,开关（联络开关，分段开关、分支开关），变压器（公变、专变），其他为null
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String attr1;
+    /**
+     * 器件属性二，可选（器件自己的编号）
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String attr2;
+    /**
+     * 器件属性三,可选（所属线路）
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String attr3;
 
