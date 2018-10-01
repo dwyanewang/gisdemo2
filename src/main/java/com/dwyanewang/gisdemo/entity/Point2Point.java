@@ -67,7 +67,7 @@ public class Point2Point {
      * 器件属性三,可选（所属线路）
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String attr3;
+    private Integer attr3;
 
     public String getDistnPos() {
         return distnPos;
@@ -157,11 +157,11 @@ public class Point2Point {
         this.attr2 = attr2;
     }
 
-    public String getAttr3() {
+    public Integer getAttr3() {
         return attr3;
     }
 
-    public void setAttr3(String attr3) {
+    public void setAttr3(Integer attr3) {
         this.attr3 = attr3;
     }
 }

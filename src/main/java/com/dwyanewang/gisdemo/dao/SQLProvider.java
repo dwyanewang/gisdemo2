@@ -16,7 +16,20 @@ public class SQLProvider {
                 FROM("h_sb_kbs");
                 WHERE("KBSBH =" + "'" + number + "'");
             }}.toString();
-        } else {
+        }else if (number.contains("PDF")){
+            return new SQL() {{
+                SELECT("POS_X as distn_x", "POS_Y as distn_y");
+                FROM("h_sb_pdf");
+                WHERE("PDFBH =" + "'" + number + "'");
+            }}.toString();
+        }else if (number.contains("BDZ")){
+            return new SQL() {{
+                SELECT("POS_X as distn_x", "POS_Y as distn_y");
+                FROM("h_sb_bdz");
+                WHERE("BDZBH =" + "'" + number + "'");
+            }}.toString();
+        }
+        else {
             return new SQL() {{
                 SELECT("POS_X as distn_x", "POS_Y as distn_y");
                 FROM("h_sb_gt");

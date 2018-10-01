@@ -79,7 +79,7 @@ body {
 #hover-tips {
     position: absolute;
     height: 30px;
-    width: 150px;
+    min-width: 100px;
     /*left: 30px;*/
     /*top: 60px;*/
     top: -50px;
@@ -91,6 +91,8 @@ body {
     border-radius: 6px;
     box-shadow: 0 0 15px #6d3fe8;
     border: 1px solid #fff;
+    /*文本不换行*/
+    white-space: nowrap;
 }
 
 #hover-tips::after {

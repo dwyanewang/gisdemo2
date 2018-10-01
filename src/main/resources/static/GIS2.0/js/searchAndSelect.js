@@ -111,7 +111,10 @@ var searchAndSelect = (function (searchAndSelect) {
          */
         leftClick: function (map) {
             var selectClick = new ol.interaction.Select({
-                condition: ol.events.condition.click
+                condition: ol.events.condition.click,
+                filter: function (feature) {
+                    return !mapTools.hasValue(feature, "专线");
+                }
             });
             map.addInteraction(selectClick);
             var temporaryFeatureStyleList = [];
@@ -127,6 +130,7 @@ var searchAndSelect = (function (searchAndSelect) {
                 if (e.selected.length > 0) {
                     temporaryFeatureStyleList = [];
                     var featureName = e.selected[0].get("name");
+                    console.log(featureName);
                     var featureList = mapTools.getFeaturesByFeatureName(featureName, map);
                     for (var j = 0, len = featureList.length; j < len; j++) {
                         var temporaryFeatureClickStyle = featureList[j].getStyle().clone();
@@ -153,35 +157,185 @@ var searchAndSelect = (function (searchAndSelect) {
                 positioning: 'center-center'
             });
             menu_overlay.setMap(map);
-            var layer0, layer1;
+            var layerList = [];
             $(map.getViewport()).on("contextmenu", function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 var pixel = map.getEventPixel(e.originalEvent);
+                var features = [];
                 map.forEachFeatureAtPixel(pixel, function (event) {
+                    features.push(event);
                     menu_overlay.setPosition(map.getEventCoordinate(e));
-                    if (mapTools.isTypeOfFeatureByProp(event, "联络开关")) {
-                        $("#interconnection-switch").css("pointer-events", "auto").click(function () {
-                            var featureCoordinate = event.getGeometry().getFirstCoordinate();
-                            var featureList = mapTools.getFeaturesByCoordinate(featureCoordinate, map);
-                            layer0 = mapTools.getLayerByFeature(featureList[0], map);
-                            layer1 = mapTools.getLayerByFeature(featureList[1], map);
-                            if (mapTools.isTypeOfLayerByColor(layer0, "#1b67f7")) {
-                                //改变layer1中线的样式
-                                mapTools.changeLineStringStyleInLayer(layer1, "#703575");
-                            } else if (mapTools.isTypeOfLayerByColor(layer1, "#1b67f7")) {
-                                //改变layer0中线的样式
-                                mapTools.changeLineStringStyleInLayer(layer0, "#703575");
-                            } else {
-                                //改变layer0,layer1中线的样式
-                                mapTools.changeLineStringStyleInLayer(layer0, "#1b67f7");
-                                mapTools.changeLineStringStyleInLayer(layer1, "#703575");
-                            }
-                        });
-                    } else {
-                        $("#interconnection-switch").css("pointer-events", "none");
-                    }
-
                 });
+                $("#interconnection-switch").css("pointer-events", "none");
+                if (mapTools.hasValue(features[0], "联络开关")) {
+                    // jQuery的click事件会累计，因此在添加click事件时，先移除click
+                    $("#interconnection-switch").css("pointer-events", "auto").off("click").click(function () {
+                        var featureCoordinate = features[0].getGeometry().getFirstCoordinate();
+                        var featureList = mapTools.getFeaturesByCoordinate(featureCoordinate, map);
+                        for (var i = 0; i < featureList.length; i++) {
+                            if (featureList[i].getGeometry().getType() === "Point") {
+                                featureList.splice(i, 1);
+                            }
+                        }
+                        for (var j = 0; j < featureList.length; j++) {
+                            layerList.push(mapTools.getLayerByFeature(featureList[j], map));
+                        }
+                        // layer0 = mapTools.getLayerByFeature(featureList[0], map);
+                        // layer1 = mapTools.getLayerByFeature(featureList[1], map);
+                        if (mapTools.isTypeOfLayerByColor(layerList[0], "#1b67f7")) {
+                            //改变layer1中线的样式
+                            mapTools.changeLineStringStyleInLayer(layerList[1], "#703575");
+                        } else if (mapTools.isTypeOfLayerByColor(layerList[1], "#1b67f7")) {
+                            //改变layer0中线的样式
+                            mapTools.changeLineStringStyleInLayer(layerList[0], "#703575");
+                        } else {
+                            //改变layer0,layer1中线的样式
+                            mapTools.changeLineStringStyleInLayer(layerList[0], "#1b67f7");
+                            mapTools.changeLineStringStyleInLayer(layerList[1], "#703575");
+                        }
+                    });
+                }
+                if (mapTools.hasValue(features[0], "分段开关") || mapTools.hasValue(features[0], "联络开关")) {
+                    $("#changeSwitchStatus").off("click").click(function () {
+                            var lineMapNumber = Math.floor(Number(features[0].get("attr3")) / 100);
+
+                            var layer = mapTools.getLayerByFeature(features[0], map);
+                            var featureList = mapTools.getFeaturesByLineMapNumberInLayer(lineMapNumber, layer);
+                            var newFeatureList = mapTools.sortFeatureListByPropName(featureList, "attr3");
+                            var mainSwitchFeatures = mapTools.removeFeatureByPropInFeatureList("分支开关", newFeatureList);
+                            console.log(mainSwitchFeatures);
+                            var switchFlag = 0;
+                            var lineNumber = mainSwitchFeatures[mainSwitchFeatures.length - 1].get("attr3");
+                            console.log(lineNumber);
+                            var lastLineFeature = mapTools.getFeaturesByPropInMap("number", lineNumber, map)[0];
+                            console.log(lastLineFeature);
+                            var lastCoordinate = lastLineFeature.getGeometry().getLastCoordinate();
+                            console.log(lastCoordinate);
+                            var lastFeatureList = mapTools.getFeaturesByCoordinate(lastCoordinate, map);
+                            var interconnectionSwitchFeature = mapTools.getFeatureByPropInFeatureList("attr1", "联络开关", lastFeatureList);
+                            console.log(interconnectionSwitchFeature);
+                            var featuresBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map);
+                            for (var i = 0; i < mainSwitchFeatures.length; i++) {
+                                if (mainSwitchFeatures[i].get("status") === 1) {
+                                    switchFlag = 1;
+                                    if (mainSwitchFeatures[i].get("attr3") < features[0].get("attr3")) {
+                                        if (interconnectionSwitchFeature.get("status") === 0) {
+                                            //断开此开关，并将后面除开关外所有器件或线路状态置为0
+                                            features[0].set("status", 1);
+                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                            features[0].changed();
+                                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                                    featuresBySwitchAttr[j].set("status", 0);
+                                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                                    }
+                                                    featuresBySwitchAttr[j].changed();
+                                                }
+                                            }
+                                        } else if (interconnectionSwitchFeature.get("status") === 1) {
+                                            //断开此开关，并将后面除开关外所有器件或线路状态置为停电状态
+                                            features[0].set("status", 1);
+                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                            features[0].changed();
+                                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                                    //状态得改
+                                                    featuresBySwitchAttr[j].set("status", 0);
+                                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                                    }
+                                                    featuresBySwitchAttr[j].changed();
+                                                }
+                                            }
+                                        }
+                                    } else if (mainSwitchFeatures[i].get("attr3") === features[0].get("attr3")) {
+                                        if (interconnectionSwitchFeature.get("status") === 0) {
+                                            //此开关不可闭合
+                                            features[0].set("status", 1);
+                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                            features[0].changed();
+                                        } else if (interconnectionSwitchFeature.get("status") === 1) {
+                                            //闭合此开关，并将后面除开关外所有器件或线路状态置为0
+                                            features[0].set("status", 0);
+                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                            features[0].changed();
+                                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                                    featuresBySwitchAttr[j].set("status", 0);
+                                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                                    }
+                                                    featuresBySwitchAttr[j].changed();
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        // 断开此开关，并将此开关与i之间的器件或线路状态置为1
+                                        features[0].set("status", 1);
+                                        features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                        features[0].changed();
+                                        var middleFeaturesBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map, mainSwitchFeatures[i].get("attr3"));
+                                        for (var j = 0; j < middleFeaturesBySwitchAttr.length; j++) {
+                                            if (mapTools.hasKey(middleFeaturesBySwitchAttr[j], "status")) {
+                                                middleFeaturesBySwitchAttr[j].set("status", 1);
+                                                middleFeaturesBySwitchAttr[j].setStyle(drawLayer.style(middleFeaturesBySwitchAttr[j], middleFeaturesBySwitchAttr[j].get("status")));
+                                                if (middleFeaturesBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                    middleFeaturesBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                                                }
+                                                middleFeaturesBySwitchAttr[j].changed();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (switchFlag === 0) {
+                                //断开此开关，并将后面除开关外所有器件或线路状态置为1
+                                features[0].set("status", 1);
+                                features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                features[0].changed();
+                                for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                    if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                        featuresBySwitchAttr[j].set("status", 1);
+                                        featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                        if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                            featuresBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                                        }
+                                        featuresBySwitchAttr[j].changed();
+                                    }
+                                }
+                            }
+
+
+                            // if (features[0].get("status") === 0) {
+                            //     flag = 1;
+                            // }
+                            // features[0].set("status", flag);
+                            // features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            // // var featuresBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map);
+                            // for (var i = 0; i < featuresBySwitchAttr.length; i++) {
+                            //     if (mapTools.hasKey(featuresBySwitchAttr[i], "status")) {
+                            //         featuresBySwitchAttr[i].set("status", 0);
+                            //     }
+                            //     featuresBySwitchAttr[i].setStyle(drawLayer.style(featuresBySwitchAttr[i], featuresBySwitchAttr[i].get("status")));
+                            //     if (featuresBySwitchAttr[i].getGeometry().getType() === "LineString") {
+                            //         if (flag === 0) {
+                            //             featuresBySwitchAttr[i].getStyle().getStroke().setWidth(2);
+                            //         } else {
+                            //             featuresBySwitchAttr[i].getStyle().getStroke().setWidth(8);
+                            //         }
+                            //
+                            //     }
+                            //     featuresBySwitchAttr[i].changed();
+                            // }
+                            // }
+                        }
+                    );
+                }
             });
             var flag = 0;
             $(map.getViewport()).on({
@@ -194,13 +348,13 @@ var searchAndSelect = (function (searchAndSelect) {
                 mouseup: function (e) {
                     if (flag === 0) {//点击
                         e.preventDefault();
+                        e.stopPropagation();
                         menu_overlay.setPosition(undefined);
-                        if (layer0 !== undefined && layer1 !== undefined) {
-                            mapTools.resetLineStringStyleInLayer(layer0);
-                            mapTools.resetLineStringStyleInLayer(layer1);
-                            layer0 = undefined;
-                            layer1 = undefined;
+                        for (var i = 0; i < layerList.length; i++) {
+                            mapTools.resetLineStringStyleInLayer(layerList[i]);
                         }
+                        layerList.splice(0, layerList.length);
+
                     }
                 }
             });
@@ -223,49 +377,51 @@ var searchAndSelect = (function (searchAndSelect) {
                 //排序字段若不指定，则默认对showField指定的列进行升序排列
                 //若需要多字段排序，则设置['id desc','name']
                 //当前案例设置了使用desc字段的内容进行降序排序
-                orderBy: ['desc desc'],
+                orderBy: ['name'],
                 //打开分页时，设置每页显示记录数
                 pageSize: 15,
                 //关闭向下的三角尖按钮,默认打开
                 dropButton: true,
-                data: data
+                data: data,
                 //格式化显示项目，提供源数据进行使用
-                // formatItem: function(data) {
-                //   return data.desc + '(' + data.name + ')';
-                // },
+                formatItem: function (data) {
+                    if (data.attr2 !== undefined) {
+                        return data.name + '(' + data.attr2 + ')';
+                    } else {
+                        return data.name;
+                    }
+
+                }
 
             });
             var searchFeatureList = [];
             var searchFeatureStyleList = [];
-            $('#func1').click(function () {
-                // alert($('#selectPage').selectPageText());
-                var featureList = mapTools.getFeaturesByFeatureName($('#selectPage').selectPageText(), map);
-                if (featureList.length > 0) {
-                    // if (featureList[0].getGeometry().getType() === "LineString") {
-                    //     searchFeatureStyle.push(featureList[0].getStyle().clone());
-                    // }
-                    for (var i = 0; i < featureList.length; i++) {
-                        searchFeatureStyleList.push(featureList[i].getStyle().clone());
+            $('#func1').off("click").click(function () {
+                if (searchFeatureList.length > 0) {
+                    for (var i = 0; i < searchFeatureList.length; i++) {
+                        searchFeatureList[i].setStyle(searchFeatureStyleList[i]);
+                        searchFeatureList[i].changed();
                     }
+                    searchFeatureList = [];
+                    searchFeatureStyleList = [];
                 }
-                for (var i = 0, len = featureList.length; i < len; i++) {
-                    if (featureList[i].getGeometry().getType() === "Point") {
-                        featureList[i].getStyle().getImage().setScale(0.6);
-                    } else if (featureList[i].getGeometry().getType() === "LineString") {
-                        featureList[i].getStyle().getStroke().setWidth(8);
-                        featureList[i].getStyle().getStroke().setColor('#1b67f7');
+                // 获取查询框中对应的feature,可能会是多个
+                var featureList = mapTools.getFeaturesByFeatureName($('#selectPage').selectPageText().split("(")[0], map);
+                for (var j = 0; j < featureList.length; j++) {
+                    searchFeatureStyleList.push(featureList[j].getStyle().clone());
+                    searchFeatureList.push(featureList[j]);
+                    if (featureList[j].getGeometry().getType() === "Point") {
+                        featureList[j].getStyle().getImage().setScale(0.6);
+                    } else if (featureList[j].getGeometry().getType() === "LineString") {
+                        featureList[j].getStyle().getStroke().setWidth(8);
+                        featureList[j].getStyle().getStroke().setColor('#1b67f7');
                     }
-                    featureList[i].changed();
+                    featureList[j].changed();
+                    var p = featureList[j].getGeometry().getFirstCoordinate();
+                    map.getView().setCenter(p);
                 }
-                searchFeatureList.push(featureList);
-                if (searchFeatureList.length > 1) {
-                    var temporaryFeatureList = searchFeatureList.shift();
-                    for (var j = 0; j < temporaryFeatureList.length; j++) {
-                        temporaryFeatureList[j].setStyle(searchFeatureStyleList[j]);
-                        temporaryFeatureList[j].changed();
-                    }
-                    searchFeatureStyleList.splice(0, searchFeatureStyleList.length);
-                }
+                // searchFeatureList.push(featureList);
+
             });
             var flag = 0;
             $(map.getViewport()).on({
@@ -280,17 +436,19 @@ var searchAndSelect = (function (searchAndSelect) {
                         e.stopPropagation();
                         e.preventDefault();
                         if (searchFeatureList.length > 0) {
-                            var temporaryFeatureList = searchFeatureList.shift();
-                            for (var j = 0; j < temporaryFeatureList.length; j++) {
-                                temporaryFeatureList[j].setStyle(searchFeatureStyleList[j]);
-                                temporaryFeatureList[j].changed();
+                            for (var i = 0; i < searchFeatureList.length; i++) {
+                                searchFeatureList[i].setStyle(searchFeatureStyleList[i]);
+                                searchFeatureList[i].changed();
                             }
-                            searchFeatureStyleList.splice(0, searchFeatureStyleList.length);
+                            searchFeatureList = [];
+                            searchFeatureStyleList = [];
                         }
                     }
                 }
             });
         }
-    };
+    }
+    ;
     return searchAndSelect;
-})(window.searchAndSelect || {});
+})
+(window.searchAndSelect || {});

@@ -114,10 +114,12 @@ var baseMap = (function (baseMap) {
              * 为map添加鼠标移动事件监听，当指向标注时改变鼠标光标状态
              */
             map.on('pointermove', function (e) {
-                // console.log(e);
                 var pixel = map.getEventPixel(e.originalEvent);
-                // console.log(pixel);
-                var hit = map.hasFeatureAtPixel(pixel);
+                var hit = map.hasFeatureAtPixel(pixel,function (layer) {
+                    // console.log(layer.getProperties());
+                    return !mapTools.hasSimilarValue(layer, "变压器专线");
+
+                });
                 map.getTargetElement().style.cursor = hit ? 'pointer' : '';
             });
             return map;

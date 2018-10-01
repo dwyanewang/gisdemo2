@@ -26,11 +26,12 @@
         <li id="interconnection-switch">显示联络线路</li>
         <li>添加地标</li>
         <li>距离丈量</li>
+        <li id="changeSwitchStatus">改变开关状态</li>
     </ul>
 </div>
 <div id="hover-tips"></div>
 <div id="testRow">
-    <input type="text" id="selectPage" class="" placeholder="请输入查询关键字">
+    <input type="text" id="selectPage" class="" placeholder="搜器件、查线路">
     <button type="button" class="select-page-button" id="func1"><img src="images/search.png"></button>
 </div>
 <!--<div id="hover-tips">-->
@@ -95,11 +96,191 @@
                 }).A);
                 var pointLayer = new ol.layer.Vector({
                     source: pointSource,
-                    zIndex: 2
+                    zIndex: 3
+                });
+                map.addLayer(pointLayer);
+                var lineSource = new ol.source.Vector();
+                for (var i = 0; i < transformerPosition.length; i++) {
+                    var coordinate = [Number(transformerPosition[i].pos_x), Number(transformerPosition[i].pos_y)];
+                    var startCoordinate = [Number(transformerPosition[i].distn_x), Number(transformerPosition[i].distn_y)];
+                    lineSource.addFeatures(drawLayer.drawLine({
+                        coordinates:[startCoordinate,coordinate],
+                        type:"专线",
+                        name:"变压器专线"
+                    }))
+                }
+                var lineLayer = new ol.layer.Vector({
+                    name: "变压器专线",
+                    source: lineSource,
+                    zIndex: 1
+                });
+                map.addLayer(lineLayer);
+            }
+
+        });
+        $.ajax({
+            type: "get",
+            url: "/api/position/ringMainUnit",
+            // async: false,
+            dataType: "json",
+            success:function (ringMainUnit) {
+                var pointSource = new ol.source.Vector();
+                pointSource.addFeatures(drawLayer.drawPoint({
+                    arr: ringMainUnit
+                }).A);
+                var pointLayer = new ol.layer.Vector({
+                    source: pointSource,
+                    zIndex: 3
+                });
+                map.addLayer(pointLayer);
+                var lineSource = new ol.source.Vector();
+                for (var i = 0; i < ringMainUnit.length; i++) {
+                    var coordinate = [Number(ringMainUnit[i].pos_x), Number(ringMainUnit[i].pos_y)];
+                    var startCoordinate = [Number(ringMainUnit[i].distn_x), Number(ringMainUnit[i].distn_y)];
+                    lineSource.addFeatures(drawLayer.drawLine({
+                        coordinates:[startCoordinate,coordinate],
+                        type:"专线",
+                        name:"环网箱专线"
+                    }))
+                }
+                var lineLayer = new ol.layer.Vector({
+                    name: "环网箱专线",
+                    source: lineSource,
+                    zIndex: 1
+                });
+                map.addLayer(lineLayer);
+            }
+        });
+        $.ajax({
+            type: "get",
+            url: "/api/position/powerDistributionRoom",
+            // async: false,
+            dataType: "json",
+            success:function (powerDistributionRoom) {
+                var pointSource = new ol.source.Vector();
+                pointSource.addFeatures(drawLayer.drawPoint({
+                    arr: powerDistributionRoom
+                }).A);
+                var pointLayer = new ol.layer.Vector({
+                    source: pointSource,
+                    zIndex: 3
+                });
+                map.addLayer(pointLayer);
+                var lineSource = new ol.source.Vector();
+                for (var i = 0; i < powerDistributionRoom.length; i++) {
+                    var coordinate = [Number(powerDistributionRoom[i].pos_x), Number(powerDistributionRoom[i].pos_y)];
+                    var startCoordinate = [Number(powerDistributionRoom[i].distn_x), Number(powerDistributionRoom[i].distn_y)];
+                    lineSource.addFeatures(drawLayer.drawLine({
+                        coordinates:[startCoordinate,coordinate],
+                        type:"专线",
+                        name:"配电房专线"
+                    }))
+                }
+                var lineLayer = new ol.layer.Vector({
+                    name: "配电房专线",
+                    source: lineSource,
+                    zIndex: 1
+                });
+                map.addLayer(lineLayer);
+            }
+        });
+        $.ajax({
+            type: "get",
+            url: "/api/position/subSectionPostPosition",
+            // async: false,
+            dataType: "json",
+            success:function (subSectionPostPosition) {
+                var pointSource = new ol.source.Vector();
+                pointSource.addFeatures(drawLayer.drawPoint({
+                    arr: subSectionPostPosition
+                }).A);
+                var pointLayer = new ol.layer.Vector({
+                    source: pointSource,
+                    zIndex: 3
+                });
+                map.addLayer(pointLayer);
+                var lineSource = new ol.source.Vector();
+                for (var i = 0; i < subSectionPostPosition.length; i++) {
+                    var coordinate = [Number(subSectionPostPosition[i].pos_x), Number(subSectionPostPosition[i].pos_y)];
+                    var startCoordinate = [Number(subSectionPostPosition[i].distn_x), Number(subSectionPostPosition[i].distn_y)];
+                    lineSource.addFeatures(drawLayer.drawLine({
+                        coordinates:[startCoordinate,coordinate],
+                        type:"专线",
+                        name:"开闭所专线"
+                    }))
+                }
+                var lineLayer = new ol.layer.Vector({
+                    name: "开闭所专线",
+                    source: lineSource,
+                    zIndex: 1
+                });
+                map.addLayer(lineLayer);
+            }
+        });
+        $.ajax({
+            type: "get",
+            url: "/api/position/switchPosition",
+            // async: false,
+            dataType: "json",
+            success:function (switchPosition) {
+                var pointSource = new ol.source.Vector();
+                pointSource.addFeatures(drawLayer.drawPoint({
+                    arr: switchPosition
+                }).A);
+                var pointLayer = new ol.layer.Vector({
+                    source: pointSource,
+                    zIndex: 3
                 });
                 map.addLayer(pointLayer);
             }
+        });
+        $.ajax({
+            type: "get",
+            url: "/api/position/towerPosition",
+            // async: false,
+            dataType: "json",
+            success:function (towerPosition) {
+                var pointSource = new ol.source.Vector();
+                pointSource.addFeatures(drawLayer.drawPoint({
+                    arr: towerPosition
+                }).A);
+                var pointLayer = new ol.layer.Vector({
+                    source: pointSource,
+                    zIndex: 2,
+                    visible:false
+                });
+                map.addLayer(pointLayer);
+            }
+        });
+        $.ajax({
+            type: "get",
+            url: "/api/position/allLinePosition",
+            // async: false,
+            dataType: "json",
+            success:function (allLinePosition) {
+                for (var i = 0; i < allLinePosition.length; i++) {
+                    var lineSource = new ol.source.Vector();
+                    var sectionLine = allLinePosition[i].sectionLine;
+                    for (var j = 0; j < sectionLine.length; j++) {
+                        lineSource.addFeatures(drawLayer.drawLine({
+                            coordinates:sectionLine[j].coordinates,
+                            number:sectionLine[j].number,
+                            name:sectionLine[j].name,
+                            type:sectionLine[j].type,
+                            attr1:sectionLine[j].attr1,
+                            attr3:sectionLine[j].attr3
+                        }))
+                    } 
+                    var pointLayer = new ol.layer.Vector({
+                        number:allLinePosition[i].lineMapNumber,
+                        name:allLinePosition[i].lineMapName,
+                        source: lineSource,
+                        zIndex: 1
+                    });
+                    map.addLayer(pointLayer);
 
+                }
+            }
         });
         // var pointSource = new ol.source.Vector();
         // pointSource.addFeatures(drawLayer.drawPoint({
@@ -140,8 +321,7 @@
 
         setTimeout(function () {
             $("#testRow").fadeIn("slow").css("display", "block");
-            searchAndSelect.search(mapTools.getAllFeatureNames(map), map);
-            console.log(mapTools.getAllFeaturesProps(map, {featureType: ["name", "attr2"]}));
+            searchAndSelect.search(mapTools.getAllFeaturesProps(map, {featureType: ["name", "attr2"]}), map);
         }, 1000);
         // searchAndSelect.dragBox(map, lineSource);
         searchAndSelect.selectPointerMove(map);

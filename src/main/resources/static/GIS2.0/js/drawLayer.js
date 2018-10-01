@@ -69,13 +69,13 @@ var drawLayer = (function (drawLayer) {
                 name: "test",
                 // 线路状态
                 status: 0,
-                //type类型有10kv、35kv、110kv、220kv
+                //type类型有10kV、35kV、110kV、220kV
                 type: "专线",
-                // 线路属性一
+                // 线路属性一，可选
                 attr1: null,
-                // 线路属性二
+                // 线路属性二，可选
                 attr2: null,
-                // 线路属性三
+                // 线路属性三，可选(所属线路)
                 attr3: null
             };
             var params = arguments[0];
@@ -127,7 +127,7 @@ var drawLayer = (function (drawLayer) {
                             break;
                         case "开关":
                             if (feature.get("attr1") === "联络开关") {
-                                src = currentURL + "/GIS2.0/images/联络开关开.jpg";
+                                src = currentURL + "/GIS2.0/images/联络开关闭.png";
                             } else {
                                 src = currentURL + "/GIS2.0/images/分段开关闭.jpg";
                             }
@@ -142,11 +142,14 @@ var drawLayer = (function (drawLayer) {
                         case "杆塔":
                             return new ol.style.Style({
                                 image: new ol.style.Circle({
-                                    radius: 30,
-                                    points: 4,
+                                    radius: 2,
+                                    // points: 4,
                                     stroke: new ol.style.Stroke({
                                         color: "#4271AE",
-                                        width: 2
+                                        width: 1
+                                    }),
+                                    fill: new ol.style.Fill({
+                                        color: "#fff"
                                     })
                                 })
                             });
@@ -158,7 +161,7 @@ var drawLayer = (function (drawLayer) {
                         //     break;
                         case "开关":
                             if (feature.get("attr1") === "联络开关") {
-                                src = currentURL + "/GIS2.0/images/联络开关闭.png";
+                                src = currentURL + "/GIS2.0/images/联络开关开.jpg";
                             } else {
                                 src = currentURL + "/GIS2.0/images/分段开关开.jpg";
                             }
@@ -169,6 +172,18 @@ var drawLayer = (function (drawLayer) {
                             } else {
                                 src = currentURL + "/GIS2.0/images/故障专变.png";
                             }
+                            break;
+                        case "配电房":
+                            src = currentURL + "/GIS2.0/images/公用配电室.jpg";
+                            break;
+                        case "环网箱":
+                            src = currentURL + "/GIS2.0/images/公用环网柜.jpg";
+                            break;
+                        case "开闭所":
+                            src = currentURL + "/GIS2.0/images/开闭所.png";
+                            break;
+                        case "故障指示器":
+                            src = currentURL + "/GIS2.0/images/故障指示器.png";
                             break;
                     }
                 }
@@ -194,7 +209,7 @@ var drawLayer = (function (drawLayer) {
                 switch (status) {
                     case 0:
                         switch (feature.get("type")) {
-                            case "10kv":
+                            case "10kV":
                                 return new ol.style.Style({
                                     stroke: new ol.style.Stroke({
                                         color: '#3ca945',
@@ -206,7 +221,7 @@ var drawLayer = (function (drawLayer) {
                                         //基准线
                                         textBaseline: 'middle',
                                         //文字样式
-                                        font: 'normal 14px 微软雅黑',
+                                        font: 'normal 8px 微软雅黑',
                                         //文本内容
                                         text: feature.get("name"),
                                         //文本填充样式（即文字颜色）
@@ -214,21 +229,21 @@ var drawLayer = (function (drawLayer) {
                                         stroke: new ol.style.Stroke({color: '#ffcc33', width: 2})
                                     })
                                 });
-                            case "35kv":
+                            case "35kV":
                                 return new ol.style.Style({
                                     stroke: new ol.style.Stroke({
                                         color: '#0000CD',
                                         width: 2
                                     })
                                 });
-                            case "110kv":
+                            case "110kV":
                                 return new ol.style.Style({
                                     stroke: new ol.style.Stroke({
                                         color: '#EE7600',
                                         width: 2
                                     })
                                 });
-                            case "220kv":
+                            case "220kV":
                                 return new ol.style.Style({
                                     stroke: new ol.style.Stroke({
                                         color: '#4A4A4A',
@@ -238,14 +253,15 @@ var drawLayer = (function (drawLayer) {
                             case "专线":
                                 return new ol.style.Style({
                                     stroke: new ol.style.Stroke({
-                                        color: '#3ca945',
+                                        lineDash: [1, 2, 3, 4, 5, 6],
+                                        color: '#295622',
                                         width: 2
                                     })
                                 });
                         }
                         break;
                     case 1:
-                        if (feature.get("type") === "10kv" || feature.get("type") === "专线") {
+                        if (feature.get("type") === "10kV" || feature.get("type") === "专线") {
                             return new ol.style.Style({
                                 stroke: new ol.style.Stroke({
                                     color: '#d81e06',
@@ -255,7 +271,7 @@ var drawLayer = (function (drawLayer) {
                         }
                         break;
                     case 2:
-                        if (feature.get("type") === "10kv" || feature.get("type") === "专线") {
+                        if (feature.get("type") === "10kV" || feature.get("type") === "专线") {
                             return new ol.style.Style({
                                 stroke: new ol.style.Stroke({
                                     color: '#d81e06',
@@ -265,7 +281,7 @@ var drawLayer = (function (drawLayer) {
                         }
                         break;
                     case 3:
-                        if (feature.get("type") === "10kv" || feature.get("type") === "专线") {
+                        if (feature.get("type") === "10kV" || feature.get("type") === "专线") {
                             return new ol.style.Style({
                                 stroke: new ol.style.Stroke({
                                     color: '#3ca945',

@@ -1,7 +1,7 @@
 package com.dwyanewang.gisdemo.entity;
 
 
-public class HSbHwx {
+public class RingMainUnit {
 
   private String hwxbh;
   private String hwxmc;
