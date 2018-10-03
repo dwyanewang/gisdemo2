@@ -282,6 +282,7 @@
                 }
             }
         });
+
         // var pointSource = new ol.source.Vector();
         // pointSource.addFeatures(drawLayer.drawPoint({
         //     arr: [{
@@ -322,7 +323,26 @@
         setTimeout(function () {
             $("#testRow").fadeIn("slow").css("display", "block");
             searchAndSelect.search(mapTools.getAllFeaturesProps(map, {featureType: ["name", "attr2"]}), map);
-        }, 1000);
+
+            var kgFeatureTest = mapTools.getFeaturesByPropInMap("number", "MYH508K002", map);
+            console.log(kgFeatureTest);
+            kgFeatureTest[0].set("status", 1);
+            kgFeatureTest[0].setStyle(drawLayer.style(kgFeatureTest[0], kgFeatureTest[0].get("status")));
+            kgFeatureTest[0].changed();
+            var featuresBySwitchAttr = mapTools.getFeaturesBySwitchAttr(kgFeatureTest[0].get("attr3"), map);
+            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                    featuresBySwitchAttr[j].set("status", 1);
+                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                    }
+                    featuresBySwitchAttr[j].changed();
+                }
+            }
+
+
+        }, 1500);
         // searchAndSelect.dragBox(map, lineSource);
         searchAndSelect.selectPointerMove(map);
         searchAndSelect.leftClick(map);

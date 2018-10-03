@@ -5,6 +5,7 @@
  */
 var searchAndSelect = (function (searchAndSelect) {
     searchAndSelect = {
+        switchFlag: 0,
         /**
          * 拉框查询，按下“ctrl+左键”触发
          * @param map 地图容器
@@ -158,6 +159,7 @@ var searchAndSelect = (function (searchAndSelect) {
             });
             menu_overlay.setMap(map);
             var layerList = [];
+
             $(map.getViewport()).on("contextmenu", function (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -195,9 +197,46 @@ var searchAndSelect = (function (searchAndSelect) {
                             mapTools.changeLineStringStyleInLayer(layerList[1], "#703575");
                         }
                     });
-                }
-                if (mapTools.hasValue(features[0], "分段开关") || mapTools.hasValue(features[0], "联络开关")) {
                     $("#changeSwitchStatus").off("click").click(function () {
+                        // var flag;
+                        // features[0].get("status") === 0 ? flag = 1 : flag = 0;
+                        // features[0].set("status", flag);
+                        // features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                        // features[0].changed();
+                        // if (flag === 0) {
+                        //     // 开关闭合
+                        //
+                        // }
+                        var featureCoord = features[0].getGeometry().getFirstCoordinate();
+                        var featuresByCoord = mapTools.getFeaturesByCoordinate(featureCoord, map);
+                        console.log(featuresByCoord);
+                        var featureList = mapTools.getFeaturesByColor(featuresByCoord, "#ccc");
+                        console.log(featureList);
+                        if (featureList.length > 0) {
+                            features[0].set("status", 0);
+                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            features[0].changed();
+                            var featuresBySwitchAttr = mapTools.getFeaturesBySwitchAttr(featureList[0].get("number"), map);
+                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                    featuresBySwitchAttr[j].set("status", 0);
+                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                    }
+                                    featuresBySwitchAttr[j].changed();
+                                }
+                            }
+                        }
+
+                    });
+                }
+                if (mapTools.hasValue(features[0], "分段开关")) {
+                    $("#changeSwitchStatus").off("click").click(function () {
+                            if (searchAndSelect.switchFlag === 0) {
+
+                            }
+
                             var lineMapNumber = Math.floor(Number(features[0].get("attr3")) / 100);
 
                             var layer = mapTools.getLayerByFeature(features[0], map);
@@ -205,6 +244,7 @@ var searchAndSelect = (function (searchAndSelect) {
                             var newFeatureList = mapTools.sortFeatureListByPropName(featureList, "attr3");
                             var mainSwitchFeatures = mapTools.removeFeatureByPropInFeatureList("分支开关", newFeatureList);
                             console.log(mainSwitchFeatures);
+
                             var switchFlag = 0;
                             var lineNumber = mainSwitchFeatures[mainSwitchFeatures.length - 1].get("attr3");
                             console.log(lineNumber);
@@ -216,73 +256,94 @@ var searchAndSelect = (function (searchAndSelect) {
                             var interconnectionSwitchFeature = mapTools.getFeatureByPropInFeatureList("attr1", "联络开关", lastFeatureList);
                             console.log(interconnectionSwitchFeature);
                             var featuresBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map);
-                            for (var i = 0; i < mainSwitchFeatures.length; i++) {
-                                if (mainSwitchFeatures[i].get("status") === 1) {
-                                    switchFlag = 1;
-                                    if (mainSwitchFeatures[i].get("attr3") < features[0].get("attr3")) {
-                                        if (interconnectionSwitchFeature.get("status") === 0) {
-                                            //断开此开关，并将后面除开关外所有器件或线路状态置为0
-                                            features[0].set("status", 1);
-                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
-                                            features[0].changed();
-                                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
-                                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
-                                                    featuresBySwitchAttr[j].set("status", 0);
-                                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
-                                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
-                                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
-                                                    }
-                                                    featuresBySwitchAttr[j].changed();
-                                                }
+                            console.log(featuresBySwitchAttr);
+                            var kgList = mapTools.getFeaturesByPropInFeatureList("status", 1, mainSwitchFeatures);
+                            console.log(kgList);
+                            if (kgList.length > 1) {
+                                //存在多个断开的开关
+                                var minKg = kgList[0];
+                                var maxKg = kgList[kgList.length - 1];
+                                if (minKg.get("attr3") > features[0].get("attr3")) {
+                                    //当点击的开关的所属线路要小于kgList的最小值
+                                    features[0].set("status", 1);
+                                    features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                    features[0].changed();
+                                    var middleFeaturesBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map, minKg.get("attr3"));
+                                    for (var j = 0; j < middleFeaturesBySwitchAttr.length; j++) {
+                                        if (mapTools.hasKey(middleFeaturesBySwitchAttr[j], "status")) {
+                                            middleFeaturesBySwitchAttr[j].set("status", 1);
+                                            middleFeaturesBySwitchAttr[j].setStyle(drawLayer.style(middleFeaturesBySwitchAttr[j], middleFeaturesBySwitchAttr[j].get("status")));
+                                            if (middleFeaturesBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                middleFeaturesBySwitchAttr[j].getStyle().getStroke().setWidth(8);
                                             }
-                                        } else if (interconnectionSwitchFeature.get("status") === 1) {
-                                            //断开此开关，并将后面除开关外所有器件或线路状态置为停电状态
-                                            features[0].set("status", 1);
-                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
-                                            features[0].changed();
-                                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
-                                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
-                                                    //状态得改
-                                                    featuresBySwitchAttr[j].set("status", 0);
-                                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
-                                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
-                                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
-                                                    }
-                                                    featuresBySwitchAttr[j].changed();
+                                            middleFeaturesBySwitchAttr[j].changed();
+                                        }
+                                    }
+                                } else if (minKg.get("attr3") === features[0].get("attr3")) {
+                                    //当点击的开关的所属线路要等于kgList的最小值
+                                    features[0].set("status", 0);
+                                    features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                    features[0].changed();
+                                    var middleFeaturesBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map, maxKg.get("attr3"));
+                                    for (var j = 0; j < middleFeaturesBySwitchAttr.length; j++) {
+                                        if (mapTools.hasKey(middleFeaturesBySwitchAttr[j], "status")) {
+                                            middleFeaturesBySwitchAttr[j].set("status", 0);
+                                            middleFeaturesBySwitchAttr[j].setStyle(drawLayer.style(middleFeaturesBySwitchAttr[j], middleFeaturesBySwitchAttr[j].get("status")));
+                                            if (middleFeaturesBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                middleFeaturesBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                            }
+                                            middleFeaturesBySwitchAttr[j].changed();
+                                        }
+                                    }
+                                } else if (minKg.get("attr3") < features[0].get("attr3") && maxKg.get("attr3") > features[0].get("attr3")) {
+                                    //当点击的开关的所属线路要处于kgList的最小值与最大值之间
+                                    var flag = 0;
+                                    if (features[0].get("status") === 0) {
+                                        flag = 1;
+                                    }
+                                    features[0].set("status", flag);
+                                    features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                    features[0].changed();
+                                } else if (maxKg.get("attr3") === features[0].get("attr3")) {
+                                    //当点击的开关的所属线路要等于kgList的最大值
+                                    if (interconnectionSwitchFeature.get("status") === 1) {
+                                        //闭合此开关，并将后面除开关外所有器件或线路状态置为1
+                                        features[0].set("status", 0);
+                                        features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                        features[0].changed();
+                                        for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                            if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                                //状态得改
+                                                featuresBySwitchAttr[j].set("status", 1);
+                                                featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                                if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                    featuresBySwitchAttr[j].getStyle().getStroke().setWidth(8);
                                                 }
+                                                featuresBySwitchAttr[j].changed();
                                             }
                                         }
-                                    } else if (mainSwitchFeatures[i].get("attr3") === features[0].get("attr3")) {
-                                        if (interconnectionSwitchFeature.get("status") === 0) {
-                                            //此开关不可闭合
-                                            features[0].set("status", 1);
-                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
-                                            features[0].changed();
-                                        } else if (interconnectionSwitchFeature.get("status") === 1) {
-                                            //闭合此开关，并将后面除开关外所有器件或线路状态置为0
-                                            features[0].set("status", 0);
-                                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
-                                            features[0].changed();
-                                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
-                                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
-                                                    featuresBySwitchAttr[j].set("status", 0);
-                                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
-                                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
-                                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
-                                                    }
-                                                    featuresBySwitchAttr[j].changed();
-                                                }
-                                            }
+                                    } else if (interconnectionSwitchFeature.get("status") === 0) {
+                                        alert(features[0].get("name") + "不可闭合");
+                                    }
+                                } else if (maxKg.get("attr3") < features[0].get("attr3")) {
+                                    //当点击的开关的所属线路要大于kgList的最大值
+                                    if (interconnectionSwitchFeature.get("status") === 1) {
+                                        var flag = 0;
+                                        if (features[0].get("status") === 0) {
+                                            flag = 1;
                                         }
-                                    } else {
-                                        // 断开此开关，并将此开关与i之间的器件或线路状态置为1
+                                        features[0].set("status", flag);
+                                        features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                        features[0].changed();
+                                    } else if (interconnectionSwitchFeature.get("status") === 0) {
+                                        //断开此开关，并将kgList的最大值与点击的开关之间的器件或状态置为停电状态
                                         features[0].set("status", 1);
                                         features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
                                         features[0].changed();
-                                        var middleFeaturesBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map, mainSwitchFeatures[i].get("attr3"));
+                                        var middleFeaturesBySwitchAttr = mapTools.getFeaturesBySwitchAttr(maxKg.get("attr3"), map, features[0].get("attr3"));
                                         for (var j = 0; j < middleFeaturesBySwitchAttr.length; j++) {
                                             if (mapTools.hasKey(middleFeaturesBySwitchAttr[j], "status")) {
-                                                middleFeaturesBySwitchAttr[j].set("status", 1);
+                                                middleFeaturesBySwitchAttr[j].set("status", 2);
                                                 middleFeaturesBySwitchAttr[j].setStyle(drawLayer.style(middleFeaturesBySwitchAttr[j], middleFeaturesBySwitchAttr[j].get("status")));
                                                 if (middleFeaturesBySwitchAttr[j].getGeometry().getType() === "LineString") {
                                                     middleFeaturesBySwitchAttr[j].getStyle().getStroke().setWidth(8);
@@ -292,9 +353,64 @@ var searchAndSelect = (function (searchAndSelect) {
                                         }
                                     }
                                 }
-                            }
-                            if (switchFlag === 0) {
-                                //断开此开关，并将后面除开关外所有器件或线路状态置为1
+                            } else if (kgList.length === 1) {
+                                //存在一个断开的开关
+                                console.log(kgList[0]);
+                                //判断kgList中的开关，与所点击的开关的相关位置，在前、当前或之后
+                                if (kgList[0].get("attr3") < features[0].get("attr3")) {
+                                    if (interconnectionSwitchFeature.get("status") === 1) {
+                                        //断开此开关，并将后面除开关外所有器件或线路状态置为停电状态
+                                        features[0].set("status", 1);
+                                        features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                        features[0].changed();
+                                        for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                            if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                                //状态得改
+                                                featuresBySwitchAttr[j].set("status", 2);
+                                                featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                                if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                    featuresBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                                                }
+                                                featuresBySwitchAttr[j].changed();
+                                            }
+                                        }
+                                    }
+                                } else if (kgList[0].get("attr3") === features[0].get("attr3")) {
+                                    //闭合此开关，将后面除开关外所有器件或线路状态置为正常状态
+                                    features[0].set("status", 0);
+                                    features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                    features[0].changed();
+                                    for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                        if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                            //状态得改
+                                            featuresBySwitchAttr[j].set("status", 0);
+                                            featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                            if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                            }
+                                            featuresBySwitchAttr[j].changed();
+                                        }
+                                    }
+                                } else {
+                                    // 断开此开关，并将此开关与i之间的器件或线路状态置为1
+                                    features[0].set("status", 1);
+                                    features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                    features[0].changed();
+                                    var middleFeaturesBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map, kgList[0].get("attr3"));
+                                    for (var j = 0; j < middleFeaturesBySwitchAttr.length; j++) {
+                                        if (mapTools.hasKey(middleFeaturesBySwitchAttr[j], "status")) {
+                                            middleFeaturesBySwitchAttr[j].set("status", 1);
+                                            middleFeaturesBySwitchAttr[j].setStyle(drawLayer.style(middleFeaturesBySwitchAttr[j], middleFeaturesBySwitchAttr[j].get("status")));
+                                            if (middleFeaturesBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                middleFeaturesBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                                            }
+                                            middleFeaturesBySwitchAttr[j].changed();
+                                        }
+                                    }
+                                }
+                            } else {
+                                //为空
+                                //断开此开关，改变后面线路或器件的状态，置为1
                                 features[0].set("status", 1);
                                 features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
                                 features[0].changed();
@@ -309,6 +425,110 @@ var searchAndSelect = (function (searchAndSelect) {
                                     }
                                 }
                             }
+
+
+                            // for (var i = 0; i < mainSwitchFeatures.length; i++) {
+                            //
+                            //     if (mainSwitchFeatures[i].get("status") === 1) {
+                            //         console.log(mainSwitchFeatures[i]);
+                            //         console.log(features[0]);
+                            //         switchFlag = 1;
+                            //         if (mainSwitchFeatures[i].get("attr3") < features[0].get("attr3")) {
+                            //             if (interconnectionSwitchFeature.get("status") === 0) {
+                            //                 //断开此开关，并将后面除开关外所有器件或线路状态置为0
+                            //                 features[0].set("status", 1);
+                            //                 features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            //                 features[0].changed();
+                            //                 for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                            //                     if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                            //                         featuresBySwitchAttr[j].set("status", 0);
+                            //                         featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                            //                         if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                            //                             featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                            //                         }
+                            //                         featuresBySwitchAttr[j].changed();
+                            //                     }
+                            //                 }
+                            //             } else if (interconnectionSwitchFeature.get("status") === 1) {
+                            //                 //断开此开关，并将后面除开关外所有器件或线路状态置为停电状态
+                            //                 features[0].set("status", 1);
+                            //                 features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            //                 features[0].changed();
+                            //                 for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                            //                     if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                            //                         //状态得改
+                            //                         featuresBySwitchAttr[j].set("status", 0);
+                            //                         featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                            //                         if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                            //                             featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                            //                         }
+                            //                         featuresBySwitchAttr[j].changed();
+                            //                     }
+                            //                 }
+                            //             }
+                            //             break;
+                            //         } else if (mainSwitchFeatures[i].get("attr3") === features[0].get("attr3")) {
+                            //             console.log("hello");
+                            //             console.log(interconnectionSwitchFeature.get("status"));
+                            //             if (interconnectionSwitchFeature.get("status") === 0) {
+                            //                 console.log(interconnectionSwitchFeature.get("status"));
+                            //                 //此开关不可闭合
+                            //                 features[0].set("status", 1);
+                            //                 features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            //                 features[0].changed();
+                            //             } else if (interconnectionSwitchFeature.get("status") === 1) {
+                            //                 //闭合此开关，并将后面除开关外所有器件或线路状态置为0
+                            //                 features[0].set("status", 0);
+                            //                 features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            //                 features[0].changed();
+                            //                 for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                            //                     if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                            //                         featuresBySwitchAttr[j].set("status", 0);
+                            //                         featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                            //                         if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                            //                             featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                            //                         }
+                            //                         featuresBySwitchAttr[j].changed();
+                            //                     }
+                            //                 }
+                            //             }
+                            //             break;
+                            //         } else {
+                            //             // 断开此开关，并将此开关与i之间的器件或线路状态置为1
+                            //             features[0].set("status", 1);
+                            //             features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            //             features[0].changed();
+                            //             var middleFeaturesBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map, mainSwitchFeatures[i].get("attr3"));
+                            //             for (var j = 0; j < middleFeaturesBySwitchAttr.length; j++) {
+                            //                 if (mapTools.hasKey(middleFeaturesBySwitchAttr[j], "status")) {
+                            //                     middleFeaturesBySwitchAttr[j].set("status", 1);
+                            //                     middleFeaturesBySwitchAttr[j].setStyle(drawLayer.style(middleFeaturesBySwitchAttr[j], middleFeaturesBySwitchAttr[j].get("status")));
+                            //                     if (middleFeaturesBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                            //                         middleFeaturesBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                            //                     }
+                            //                     middleFeaturesBySwitchAttr[j].changed();
+                            //                 }
+                            //             }
+                            //             break;
+                            //         }
+                            //     }
+                            // }
+                            // if (switchFlag === 0) {
+                            //     //断开此开关，并将后面除开关外所有器件或线路状态置为1
+                            //     features[0].set("status", 1);
+                            //     features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            //     features[0].changed();
+                            //     for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                            //         if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                            //             featuresBySwitchAttr[j].set("status", 1);
+                            //             featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                            //             if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                            //                 featuresBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                            //             }
+                            //             featuresBySwitchAttr[j].changed();
+                            //         }
+                            //     }
+                            // }
 
 
                             // if (features[0].get("status") === 0) {
@@ -359,6 +579,11 @@ var searchAndSelect = (function (searchAndSelect) {
                 }
             });
         },
+        /**
+         * 查询事件
+         * @param data 器件或线路的名称
+         * @param map 地图容器
+         */
         search: function (data, map) {
             $('#selectPage').selectPage({
                 showField: 'name',
@@ -447,8 +672,7 @@ var searchAndSelect = (function (searchAndSelect) {
                 }
             });
         }
-    }
-    ;
+    };
     return searchAndSelect;
 })
 (window.searchAndSelect || {});

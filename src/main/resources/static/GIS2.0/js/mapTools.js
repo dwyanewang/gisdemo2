@@ -80,7 +80,11 @@ var mapTools = (function (mapTools) {
                 }
                 return mapTools.duplicate(featureNameList, "name");
             },
-
+            /**
+             * 查询所有feature的某一个或多个属性，用于器件或线路查询时
+             * @param map 地图容器
+             * @returns {*}
+             */
             getAllFeaturesProps: function (map) {
                 var defaultValues = {
                     featureType: ["name"]
@@ -166,7 +170,7 @@ var mapTools = (function (mapTools) {
              * 通过feature获取此feature所在图层
              * @param feature 点或线要素
              * @param map 地图容器
-             * @returns {T|number|*}
+             * @returns {ol.layer.Vector}
              */
             getLayerByFeature: function (feature, map) {
                 var layers = map.getLayers().getArray();
@@ -417,7 +421,7 @@ var mapTools = (function (mapTools) {
              * @param maxAttr 线路属性最大值
              * @returns {Array}
              */
-            getFeaturesBySwitchAttr: function (attr, map,maxAttr) {
+            getFeaturesBySwitchAttr: function (attr, map, maxAttr) {
                 if (maxAttr === undefined) {
                     maxAttr = (Math.floor(attr / 100) + 1) * 100;
                 }
@@ -500,8 +504,6 @@ var mapTools = (function (mapTools) {
                 }
                 return featureList;
             },
-
-
             /**
              * 获取map中所有包含某一属性值的layer
              * @param prop layer的属性值
@@ -569,7 +571,7 @@ var mapTools = (function (mapTools) {
                 return featureList;
             },
             // 通过属性值获取相对应的feature
-            getFeaturesByPropInMap:function (propName,prop, map) {
+            getFeaturesByPropInMap: function (propName, prop, map) {
                 var featureList = [];
                 var layers = map.getLayers().getArray();
                 for (var i = 0, len = layers.length; i < len; i++) {
@@ -589,7 +591,7 @@ var mapTools = (function (mapTools) {
                 return featureList;
             },
             //通过属性值获取featureList中相对应的feature
-            getFeatureByPropInFeatureList:function (propName, prop, featureList) {
+            getFeatureByPropInFeatureList: function (propName, prop, featureList) {
                 for (var i = 0, featureLen = featureList.length; i < featureLen; i++) {
                     var props = featureList[i].getProperties();
                     for (var key in props) {
@@ -599,6 +601,20 @@ var mapTools = (function (mapTools) {
                         }
                     }
                 }
+            },
+            //通过属性值获取featureList中相对应的feature
+            getFeaturesByPropInFeatureList: function (propName, prop, features) {
+                var featureList = [];
+                for (var i = 0, featureLen = features.length; i < featureLen; i++) {
+                    var props = features[i].getProperties();
+                    for (var key in props) {
+                        if (!props.hasOwnProperty(key)) continue;
+                        if (key === propName && props[key] === prop) {
+                            featureList.push(features[i]);
+                        }
+                    }
+                }
+                return featureList;
             }
         };
         return mapTools;

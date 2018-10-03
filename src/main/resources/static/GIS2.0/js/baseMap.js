@@ -109,7 +109,7 @@ var baseMap = (function (baseMap) {
                 }));
                 map.addInteraction(new ol.interaction.DragRotateAndZoom());
             }
-            map.addControl(new ol.control.MousePosition());
+            // map.addControl(new ol.control.MousePosition());
             /**
              * 为map添加鼠标移动事件监听，当指向标注时改变鼠标光标状态
              */

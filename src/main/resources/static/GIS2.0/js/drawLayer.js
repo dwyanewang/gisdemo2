@@ -186,6 +186,38 @@ var drawLayer = (function (drawLayer) {
                             src = currentURL + "/GIS2.0/images/故障指示器.png";
                             break;
                     }
+                }else if (status === 2) {
+                    switch (feature.get("type")) {
+                        // case "故障指示器":
+                        //     src = "故障指示器的src";
+                        //     break;
+                        case "开关":
+                            if (feature.get("attr1") === "联络开关") {
+                                src = currentURL + "/GIS2.0/images/联络开关开.jpg";
+                            } else {
+                                src = currentURL + "/GIS2.0/images/分段开关开.jpg";
+                            }
+                            break;
+                        case "变压器":
+                            if (feature.get("attr1") === "公变") {
+                                src = currentURL + "/GIS2.0/images/故障公变.png";
+                            } else {
+                                src = currentURL + "/GIS2.0/images/故障专变.png";
+                            }
+                            break;
+                        case "配电房":
+                            src = currentURL + "/GIS2.0/images/公用配电室.jpg";
+                            break;
+                        case "环网箱":
+                            src = currentURL + "/GIS2.0/images/公用环网柜.jpg";
+                            break;
+                        case "开闭所":
+                            src = currentURL + "/GIS2.0/images/开闭所.png";
+                            break;
+                        case "故障指示器":
+                            src = currentURL + "/GIS2.0/images/故障指示器.png";
+                            break;
+                    }
                 }
                 return new ol.style.Style({
                     image: new ol.style.Icon({
@@ -274,7 +306,7 @@ var drawLayer = (function (drawLayer) {
                         if (feature.get("type") === "10kV" || feature.get("type") === "专线") {
                             return new ol.style.Style({
                                 stroke: new ol.style.Stroke({
-                                    color: '#d81e06',
+                                    color: '#ccc',
                                     width: 2
                                 })
                             });
