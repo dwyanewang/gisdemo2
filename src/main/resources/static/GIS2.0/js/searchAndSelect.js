@@ -170,6 +170,8 @@ var searchAndSelect = (function (searchAndSelect) {
                     menu_overlay.setPosition(map.getEventCoordinate(e));
                 });
                 $("#interconnection-switch").css("pointer-events", "none");
+                $("#changeSwitchStatus").css("pointer-events", "none");
+                console.log(features[0]);
                 if (mapTools.hasValue(features[0], "联络开关")) {
                     // jQuery的click事件会累计，因此在添加click事件时，先移除click
                     $("#interconnection-switch").css("pointer-events", "auto").off("click").click(function () {
@@ -197,21 +199,11 @@ var searchAndSelect = (function (searchAndSelect) {
                             mapTools.changeLineStringStyleInLayer(layerList[1], "#703575");
                         }
                     });
-                    $("#changeSwitchStatus").off("click").click(function () {
-                        // var flag;
-                        // features[0].get("status") === 0 ? flag = 1 : flag = 0;
-                        // features[0].set("status", flag);
-                        // features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
-                        // features[0].changed();
-                        // if (flag === 0) {
-                        //     // 开关闭合
-                        //
-                        // }
+                    $("#changeSwitchStatus").css("pointer-events", "auto").off("click").click(function () {
                         var featureCoord = features[0].getGeometry().getFirstCoordinate();
-                        var featuresByCoord = mapTools.getFeaturesByCoordinate(featureCoord, map);
-                        console.log(featuresByCoord);
+                        var featuresByCoord = mapTools.getFeaturesByCoordinate(featureCoord, map, "LineString");
                         var featureList = mapTools.getFeaturesByColor(featuresByCoord, "#ccc");
-                        console.log(featureList);
+                        var faultyFeatureList = mapTools.getFeaturesByColor(featuresByCoord, "#d81e06");
                         if (featureList.length > 0) {
                             features[0].set("status", 0);
                             features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
@@ -228,37 +220,53 @@ var searchAndSelect = (function (searchAndSelect) {
                                 }
                             }
                         }
+                        var switchStatus1 = function (featuresByCoord) {
+                            for (var i = 0; i < featuresByCoord.length; i++) {
+                                var switchFeatureList = mapTools.getFeaturesByPropInMap("attr3", featuresByCoord[i].get("number"), map);
+                                for (var j = 0; j < switchFeatureList.length; j++) {
+                                    if (switchFeatureList[j].get("type") === "开关") {
+                                        console.log(switchFeatureList[j]);
+                                        if (switchFeatureList[j].get("status") === 1) {
+                                            return switchFeatureList[j];
+                                        }
+                                    }
+                                }
+                            }
+                        };
+                        var faultySwitch = switchStatus1(featuresByCoord);
+                        if (faultySwitch !== undefined && faultyFeatureList.length === 0 && featureList.length === 0) {
 
+                            features[0].set("status", 1);
+                            features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                            features[0].changed();
+                            var featuresBySwitchAttr = mapTools.getFeaturesBySwitchAttr(faultySwitch.get("attr3"), map);
+                            for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                    featuresBySwitchAttr[j].set("status", 2);
+                                    featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                    if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                        featuresBySwitchAttr[j].getStyle().getStroke().setWidth(8);
+                                    }
+                                    featuresBySwitchAttr[j].changed();
+                                }
+                            }
+                        }
                     });
                 }
                 if (mapTools.hasValue(features[0], "分段开关")) {
-                    $("#changeSwitchStatus").off("click").click(function () {
-                            if (searchAndSelect.switchFlag === 0) {
-
-                            }
-
+                    $("#changeSwitchStatus").css("pointer-events", "auto").off("click").click(function () {
                             var lineMapNumber = Math.floor(Number(features[0].get("attr3")) / 100);
-
                             var layer = mapTools.getLayerByFeature(features[0], map);
                             var featureList = mapTools.getFeaturesByLineMapNumberInLayer(lineMapNumber, layer);
                             var newFeatureList = mapTools.sortFeatureListByPropName(featureList, "attr3");
                             var mainSwitchFeatures = mapTools.removeFeatureByPropInFeatureList("分支开关", newFeatureList);
-                            console.log(mainSwitchFeatures);
-
-                            var switchFlag = 0;
                             var lineNumber = mainSwitchFeatures[mainSwitchFeatures.length - 1].get("attr3");
-                            console.log(lineNumber);
                             var lastLineFeature = mapTools.getFeaturesByPropInMap("number", lineNumber, map)[0];
-                            console.log(lastLineFeature);
                             var lastCoordinate = lastLineFeature.getGeometry().getLastCoordinate();
-                            console.log(lastCoordinate);
                             var lastFeatureList = mapTools.getFeaturesByCoordinate(lastCoordinate, map);
                             var interconnectionSwitchFeature = mapTools.getFeatureByPropInFeatureList("attr1", "联络开关", lastFeatureList);
-                            console.log(interconnectionSwitchFeature);
                             var featuresBySwitchAttr = mapTools.getFeaturesBySwitchAttr(features[0].get("attr3"), map);
-                            console.log(featuresBySwitchAttr);
                             var kgList = mapTools.getFeaturesByPropInFeatureList("status", 1, mainSwitchFeatures);
-                            console.log(kgList);
                             if (kgList.length > 1) {
                                 //存在多个断开的开关
                                 var minKg = kgList[0];
@@ -376,21 +384,26 @@ var searchAndSelect = (function (searchAndSelect) {
                                         }
                                     }
                                 } else if (kgList[0].get("attr3") === features[0].get("attr3")) {
-                                    //闭合此开关，将后面除开关外所有器件或线路状态置为正常状态
-                                    features[0].set("status", 0);
-                                    features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
-                                    features[0].changed();
-                                    for (var j = 0; j < featuresBySwitchAttr.length; j++) {
-                                        if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
-                                            //状态得改
-                                            featuresBySwitchAttr[j].set("status", 0);
-                                            featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
-                                            if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
-                                                featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                    if (interconnectionSwitchFeature.get("status") === 1) {
+                                        //闭合此开关，将后面除开关外所有器件或线路状态置为正常状态
+                                        features[0].set("status", 0);
+                                        features[0].setStyle(drawLayer.style(features[0], features[0].get("status")));
+                                        features[0].changed();
+                                        for (var j = 0; j < featuresBySwitchAttr.length; j++) {
+                                            if (mapTools.hasKey(featuresBySwitchAttr[j], "status")) {
+                                                //状态得改
+                                                featuresBySwitchAttr[j].set("status", 0);
+                                                featuresBySwitchAttr[j].setStyle(drawLayer.style(featuresBySwitchAttr[j], featuresBySwitchAttr[j].get("status")));
+                                                if (featuresBySwitchAttr[j].getGeometry().getType() === "LineString") {
+                                                    featuresBySwitchAttr[j].getStyle().getStroke().setWidth(2);
+                                                }
+                                                featuresBySwitchAttr[j].changed();
                                             }
-                                            featuresBySwitchAttr[j].changed();
                                         }
+                                    }else if (interconnectionSwitchFeature.get("status") === 0) {
+                                        alert(features[0].get("name") + "不可闭合");
                                     }
+
                                 } else {
                                     // 断开此开关，并将此开关与i之间的器件或线路状态置为1
                                     features[0].set("status", 1);

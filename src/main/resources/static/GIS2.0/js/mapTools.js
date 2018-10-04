@@ -189,9 +189,10 @@ var mapTools = (function (mapTools) {
              * 通过坐标获取相应的featureList
              * @param coordinate 坐标
              * @param map 地图容器
+             * @param featureType feature的类型
              * @returns {Array}
              */
-            getFeaturesByCoordinate: function (coordinate, map) {
+            getFeaturesByCoordinate: function (coordinate, map,featureType) {
                 var featureList = [];
                 var layers = map.getLayers().getArray();
                 for (var i = 0, len = layers.length; i < len; i++) {
@@ -205,7 +206,12 @@ var mapTools = (function (mapTools) {
                             }
                             for (var k = 0; k < featureCoordinates.length; k++) {
                                 if (coordinate[0] === featureCoordinates[k][0] && coordinate[1] === featureCoordinates[k][1]) {
-                                    featureList.push(features[j]);
+                                    if (features[j].getGeometry().getType() === featureType) {
+                                        featureList.push(features[j]);
+                                    }else if (featureType === undefined) {
+                                        featureList.push(features[j]);
+                                    }
+
                                 }
                             }
                         }
@@ -602,7 +608,7 @@ var mapTools = (function (mapTools) {
                     }
                 }
             },
-            //通过属性值获取featureList中相对应的feature
+            //通过属性值获取featureList中相对应的多个feature
             getFeaturesByPropInFeatureList: function (propName, prop, features) {
                 var featureList = [];
                 for (var i = 0, featureLen = features.length; i < featureLen; i++) {
